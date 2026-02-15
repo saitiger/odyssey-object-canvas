@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StoryBoardai</title>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #e8c4b8 0%, #ddb8a9 50%, #d4b5c4 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #999;
+    }
+    .status-dot.connected { background: #22c55e; }
+    .status-dot.connecting { background: #eab308; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+    
+    .btn {
+      padding: 8px 18px;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: rgba(255,255,255,0.9); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #4a5568; color: white; border-color: #4a5568; }
+    .btn-primary:hover { background: #2d3748; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px 32px; }
+
+    /* ========== SCREEN 1: PROMPT INPUT ========== */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .prompt-screen { text-align: center; padding-top: 60px; }
+    .prompt-title {
+      font-family: 'Caveat', cursive;
+      font-size: 48px;
+      color: #2d3748;
+      margin-bottom: 8px;
+    }
+    .prompt-subtitle { color: #666; margin-bottom: 32px; }
+
+    .prompt-box {
+      max-width: 700px;
+      margin: 0 auto 24px;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .prompt-textarea {
+      width: 100%;
+      min-height: 120px;
+      border: none;
+      font-size: 16px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    }
+    .prompt-textarea::placeholder { color: #999; }
+
+    .storyboard-btn {
+      padding: 16px 48px;
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .storyboard-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102,126,234,0.4); }
+    .storyboard-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ========== SCREEN 2: STORYBOARD ========== */
+    .storyboard-screen { background: #f5f0e8; min-height: calc(100vh - 80px); margin: -20px -32px; padding: 32px; }
+    
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .project-title {
+      font-family: 'Caveat', cursive;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    .project-subtitle {
+      color: #666;
+      font-style: italic;
+      margin-top: 4px;
+      max-width: 500px;
+    }
+    .project-actions { display: flex; gap: 12px; }
+
+    .scenes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .scene-card {
+      background: #fffef9;
+      border: 2px solid #e8e4d9;
+      border-radius: 4px;
+      padding: 16px;
+      position: relative;
+    }
+    .scene-label {
+      position: absolute;
+      top: -10px;
+      left: 12px;
+      background: #fffef9;
+      padding: 0 8px;
+      font-family: 'Caveat', cursive;
+      font-size: 18px;
+      color: #d69e2e;
+    }
+    .scene-textarea {
+      width: 100%;
+      min-height: 100px;
+      border: none;
+      font-family: 'Caveat', cursive;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      background: transparent;
+    }
+    .scene-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .scene-card.dragging { opacity: 0.5; }
+    .scene-card.drag-over { border-color: #667eea; border-style: dashed; }
+    .scene-delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .scene-delete-btn:hover { background: #fee; border-color: #e53e3e; color: #e53e3e; }
+    .scene-drag-handle {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #999;
+      font-size: 14px;
+      cursor: grab;
+    }
+    .scene-drag-handle:active { cursor: grabbing; }
+    .scene-tag {
+      padding: 4px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      background: white;
+    }
+    .scene-tag.yellow { border-color: #d69e2e; color: #d69e2e; }
+    .scene-tag.blue { border-color: #3182ce; color: #3182ce; }
+    .scene-tag.green { border-color: #38a169; color: #38a169; }
+    .duration-input {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #666;
+    }
+    .duration-input input {
+      width: 40px;
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+    }
+    .page-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .page-btn:hover { background: #f0f0f0; }
+    .page-numbers { display: flex; gap: 8px; font-family: 'Caveat', cursive; font-size: 20px; }
+    .page-num { cursor: pointer; }
+    .page-num.active { color: #e53e3e; font-weight: 600; }
+
+    .generate-container { text-align: center; margin-top: 32px; }
+    .generate-btn {
+      padding: 16px 64px;
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .generate-btn:hover { box-shadow: 0 8px 25px rgba(72,187,120,0.4); }
+
+    /* ========== SCREEN 3: GENERATION ========== */
+    .generation-screen { text-align: center; }
+
+    .scene-counter {
+      font-family: 'Caveat', cursive;
+      font-size: 42px;
+      margin-bottom: 8px;
+    }
+    .record-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 28px;
+      background: white;
+      border: 2px solid #e53e3e;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #e53e3e;
+      cursor: pointer;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .record-btn.recording { background: #e53e3e; color: white; }
+    .record-dot {
+      width: 12px; height: 12px;
+      background: #e53e3e;
+      border-radius: 50%;
+    }
+    .record-btn.recording .record-dot { background: white; animation: pulse 1s infinite; }
+    .record-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #e53e3e;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transform: rotate(12deg);
+    }
+
+    .video-wrapper {
+      max-width: 850px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    .video-frame {
+      position: relative;
+      background: #1a1a2e;
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+    }
+    #video { width: 100%; height: 100%; object-fit: contain; }
+    .camera-overlay {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .camera-overlay.hidden { display: none; }
+
+    .timeline-container {
+      background: #f7f7f7;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 20px;
+    }
+    .time-row { display: flex; justify-content: space-between; font-size: 14px; color: #666; margin-bottom: 8px; }
+    .timeline-track {
+      height: 8px;
+      background: #ddd;
+      border-radius: 4px;
+      position: relative;
+    }
+    .timeline-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #4299e1, #3182ce);
+      border-radius: 4px;
+      width: 0%;
+    }
+    .timeline-marker {
+      position: absolute;
+      top: -4px;
+      width: 16px; height: 16px;
+      background: #e53e3e;
+      border: 2px solid white;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      left: 0%;
+    }
+    .timeline-ticks { display: flex; justify-content: space-between; margin-top: 8px; }
+    .tick { width: 1px; height: 8px; background: #ccc; }
+
+    .scene-markers {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    .scene-marker {
+      padding: 6px 14px;
+      background: #e2e8f0;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .scene-marker.active { background: #667eea; color: white; }
+    .scene-marker.completed { background: #48bb78; color: white; }
+
+    .back-link {
+      margin-top: 24px;
+      color: #666;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .back-link:hover { color: #333; }
+
+    .action-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .action-btn {
+      width: 48px; height: 48px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: white;
+      cursor: pointer;
+      font-size: 20px;
+    }
+    .action-btn:hover { background: #f7f7f7; }
+    .action-btn.danger:hover { background: #fff5f5; border-color: #e53e3e; color: #e53e3e; }
+
+    .feedback-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #666;
+    }
+    .feedback-btn {
+      border: 1px solid #ddd;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .feedback-btn:hover { background: #f7f7f7; }
+    .feedback-btn.up.active { border-color: #38a169; color: #2f855a; }
+    .feedback-btn.down.active { border-color: #e53e3e; color: #c53030; }
+    .feedback-status { min-width: 110px; text-align: left; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🎬 StoryBoardai</div>
+    <div class="header-right">
+      <div class="status-pill">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button class="btn" id="connectBtn">Connect</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- SCREEN 1: Prompt Input -->
+    <div class="screen active" id="promptScreen">
+      <div class="prompt-screen">
+        <h1 class="prompt-title">What's your story?</h1>
+        <p class="prompt-subtitle">Describe your scene and we'll create a storyboard</p>
+
+        <div class="prompt-box">
+          <textarea class="prompt-textarea" id="mainPrompt" placeholder="e.g., A high-speed chase through the rainy streets of Neo-Tokyo. The protagonist weaves between neon-lit buildings on a hoverbike, pursued by corporate security drones..."></textarea>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:12px; padding-top:12px; border-top:1px solid #eee;">
+            <input type="file" id="refImageInput" accept=".jpg,.jpeg,.png,.webp,.gif,.bmp" style="display:none;">
+            <button class="btn" id="attachImageBtn" style="display:flex; align-items:center; gap:6px;">
+              📎 Attach Reference Image
+            </button>
+            <div id="imagePreviewContainer" style="display:none; align-items:center; gap:8px; padding:8px 12px; background:#f7f7f7; border-radius:8px;">
+              <img id="imagePreviewThumb" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+              <span id="imagePreviewName" style="font-size:13px; color:#666;"></span>
+              <button id="removeImageBtn" style="background:none; border:none; color:#e53e3e; cursor:pointer; font-size:16px;">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="storyboard-btn" id="toStoryboardBtn">Create Storyboard →</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: Storyboard -->
+    <div class="screen" id="storyboardScreen">
+      <div class="storyboard-screen">
+        <div class="project-header">
+          <div>
+            <h1 class="project-title" id="projectTitle">Project: Untitled</h1>
+            <p class="project-subtitle" id="projectSubtitle">"Your story prompt here..."</p>
+          </div>
+          <div class="project-actions">
+            <button class="btn" id="orientationToggleBtn">Portrait</button>
+            <button class="btn" id="regenerateBtn">🔄 Regenerate</button>
+            <button class="btn" id="addSceneBtn">+ Add Scene</button>
+          </div>
+        </div>
+
+        <div class="scenes-grid" id="scenesGrid"></div>
+
+        <div class="pagination">
+          <button class="page-btn" id="prevPage">←</button>
+          <div class="page-numbers" id="pageNumbers"></div>
+          <button class="page-btn" id="nextPage">→</button>
+        </div>
+
+        <div class="generate-container">
+          <button class="btn" id="backToPromptBtn" style="margin-right: 16px;">← Back</button>
+          <button class="generate-btn" id="filmItBtn">🎬 Film It</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: Generation -->
+    <div class="screen" id="generationScreen">
+      <div class="generation-screen">
+        <h1 class="scene-counter" id="sceneCounterTitle">Scene 01: Setup</h1>
+
+        <div class="video-wrapper">
+          <div class="video-frame">
+            <video id="video" autoplay playsinline muted></video>
+            <div class="camera-overlay hidden" id="cameraOverlay">Loading...</div>
+          </div>
+        </div>
+
+        <div class="timeline-container">
+          <div class="time-row">
+            <span id="currentTime">00:00</span>
+            <span id="totalTime">00:00</span>
+          </div>
+          <div class="timeline-track">
+            <div class="timeline-progress" id="timelineProgress"></div>
+            <div class="timeline-marker" id="timelineMarker"></div>
+          </div>
+          <div class="timeline-ticks" id="timelineTicks"></div>
+          <div class="scene-markers" id="sceneMarkers"></div>
+        </div>
+
+        <div class="back-link" id="backToStoryboard">← BACK TO STORYBOARD</div>
+        <div class="feedback-row">
+          <span>Rate breakdown:</span>
+          <button class="feedback-btn up" id="thumbsUpBtn">👍 Helpful</button>
+          <button class="feedback-btn down" id="thumbsDownBtn">👎 Needs work</button>
+          <span class="feedback-status" id="feedbackStatus"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Odyssey } from '@odysseyml/odyssey';
+
+    const ODYSSEY_API_KEY = 'ody_yZhHcqe4Sj8vLNbBTbQIdIQLBaPWHeJ4';
+    const client = new Odyssey({ apiKey: ODYSSEY_API_KEY });
+
+    // Anthropic Claude API key - ADD YOUR KEY HERE
+    let ANTHROPIC_API_KEY = localStorage.getItem('anthropic_api_key') || ''; // <-- Or set directly here
+
+    // Scene breakdown system prompt
+    const SCENE_BREAKDOWN_SYSTEM_PROMPT = `You are a scene breakdown assistant for Odyssey-2, a real-time video generation AI.
+Given a scene description, break it into 1-5 sequential prompts.
+
+CRITICAL: You MUST ALWAYS return a valid JSON array. NEVER return plain text, questions, or explanations.
+
+**For SIMPLE/STATIC scenes (no action sequence):**
+- Return a single-prompt array with a detailed, enriched version of the scene
+- Add camera angle, lighting, mood, and style details
+
+**For COMPLEX scenes with action sequences:**
+
+For the FIRST prompt (start):
+- Include: Subject, Action, Environment, Style, Camera position, Composition, Lighting/mood
+- Be exhaustive and descriptive to set up the full scene
+
+For FOLLOW-UP prompts (interact):
+- ONLY describe the CHANGE or new state, NOT the full scene
+- Use STATIVE present-continuous ("is crying", "is standing") instead of action verbs
+- Action verbs cause loops! Stative descriptions create stable states
+- BAD: "The boy falls down" (will loop the falling)
+- GOOD: "The boy is lying on the ground, crying"
+
+**Timing guidance:**
+- Quick actions (falling, turning): 2-3 seconds
+- Medium actions (standing up, walking): 3-4 seconds  
+- Slow actions (emotional moments): 4-6 seconds
+
+Return ONLY a valid JSON array:
+[
+  {"order": 1, "prompt": "full scene", "type": "start", "delayAfterMs": 3000},
+  {"order": 2, "prompt": "state change", "type": "interact", "delayAfterMs": 0}
+]`;
+
+    // Elements
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const connectBtn = document.getElementById('connectBtn');
+    const promptScreen = document.getElementById('promptScreen');
+    const storyboardScreen = document.getElementById('storyboardScreen');
+    const generationScreen = document.getElementById('generationScreen');
+    const mainPrompt = document.getElementById('mainPrompt');
+    const toStoryboardBtn = document.getElementById('toStoryboardBtn');
+    const scenesGrid = document.getElementById('scenesGrid');
+    const projectTitle = document.getElementById('projectTitle');
+    const projectSubtitle = document.getElementById('projectSubtitle');
+    const regenerateBtn = document.getElementById('regenerateBtn');
+    const backToPromptBtn = document.getElementById('backToPromptBtn');
+    const filmItBtn = document.getElementById('filmItBtn');
+    const video = document.getElementById('video');
+    const sceneCounterTitle = document.getElementById('sceneCounterTitle');
+    const cameraOverlay = document.getElementById('cameraOverlay');
+    
+    const timelineProgress = document.getElementById('timelineProgress');
+    const timelineMarker = document.getElementById('timelineMarker');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const sceneMarkers = document.getElementById('sceneMarkers');
+    const backToStoryboard = document.getElementById('backToStoryboard');
+    const orientationToggleBtn = document.getElementById('orientationToggleBtn');
+    const thumbsUpBtn = document.getElementById('thumbsUpBtn');
+    const thumbsDownBtn = document.getElementById('thumbsDownBtn');
+    const feedbackStatus = document.getElementById('feedbackStatus');
+
+    // State
+    let isConnected = false;
+    let isStreaming = false;
+    let isRecording = false;
+    let scenes = [];
+    let currentSceneIndex = 0;
+    let generationStartTime = null;
+    let currentPage = 0;
+    const scenesPerPage = 6;
+    let referenceImage = null;
+    let lastBreakdownSource = 'unknown';
+    let lastClaudeRawResponse = null;
+    let lastClaudeParsed = null;
+    let lastFeedbackRating = null;
+
+    // Reference image handling
+    const refImageInput = document.getElementById('refImageInput');
+    const attachImageBtn = document.getElementById('attachImageBtn');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const imagePreviewThumb = document.getElementById('imagePreviewThumb');
+    const imagePreviewName = document.getElementById('imagePreviewName');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+
+    attachImageBtn.onclick = () => refImageInput.click();
+
+    refImageInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 25 * 1024 * 1024) {
+          alert('Image too large. Maximum size is 25MB.');
+          return;
+        }
+        referenceImage = file;
+        imagePreviewThumb.src = URL.createObjectURL(file);
+        imagePreviewName.textContent = file.name.length > 20 ? file.name.slice(0, 17) + '...' : file.name;
+        imagePreviewContainer.style.display = 'flex';
+        attachImageBtn.style.display = 'none';
+      }
+    };
+
+    removeImageBtn.onclick = () => {
+      referenceImage = null;
+      refImageInput.value = '';
+      imagePreviewContainer.style.display = 'none';
+      attachImageBtn.style.display = 'flex';
+    };
+
+    // Style enhancements
+    const styleEnhancements = {
+      action: 'dynamic camera movement, intense lighting, motion blur, adrenaline-pumping atmosphere',
+      cinematic: 'wide cinematic shots, dramatic lighting, film grain, epic scale, movie-quality visuals',
+      dreamy: 'soft focus, ethereal glow, pastel colors, floating particles, magical atmosphere',
+      noir: 'high contrast, dramatic shadows, moody lighting, rain-slicked streets, mysterious ambiance',
+      anime: 'anime style, vibrant colors, expressive characters, dynamic action lines, Japanese animation aesthetic',
+      documentary: 'naturalistic lighting, handheld camera feel, authentic moments, observational style'
+    };
+
+    // Tags for scenes
+    let portrait = true;
+
+    const sceneTags = [
+      ['EXTERIOR', 'WIDE SHOT', 'ESTABLISHING'],
+      ['INTERIOR', 'MEDIUM SHOT', 'DIALOGUE'],
+      ['CLOSE-UP', 'DETAIL', 'REACTION'],
+      ['EXTERIOR', 'HIGH ANGLE', 'ACTION'],
+      ['WIDE SHOT', 'PANORAMIC', 'LANDSCAPE'],
+      ['LOW ANGLE', 'DRAMATIC', 'REVEAL']
+    ];
+
+    function updateOrientationButton() {
+      if (!orientationToggleBtn) return;
+      orientationToggleBtn.textContent = portrait ? 'Portrait' : 'Landscape';
+    }
+
+    if (orientationToggleBtn) {
+      orientationToggleBtn.onclick = () => {
+        portrait = !portrait;
+        updateOrientationButton();
+      };
+    }
+
+    updateOrientationButton();
+
+    // Navigation
+    function showScreen(screen) {
+      [promptScreen, storyboardScreen, generationScreen].forEach(s => s.classList.remove('active'));
+      screen.classList.add('active');
+    }
+
+    // Connection
+    connectBtn.onclick = async () => {
+      if (isConnected) {
+        client.disconnect();
+        return;
+      }
+
+      statusDot.classList.add('connecting');
+      statusText.textContent = 'Connecting...';
+      connectBtn.disabled = true;
+
+      try {
+        const mediaStream = await client.connect({
+          onDisconnected: () => {
+            isConnected = false;
+            statusDot.className = 'status-dot';
+            statusText.textContent = 'Disconnected';
+            connectBtn.textContent = 'Connect';
+            connectBtn.disabled = false;
+          },
+          onStreamStarted: (id) => {
+            console.log('Stream started:', id);
+            cameraOverlay.classList.remove('hidden');
+          },
+          onStreamEnded: () => {
+            console.log('Stream ended');
+          },
+          onInteractAcknowledged: (p) => {
+            console.log('Ack:', p);
+            cameraOverlay.textContent = p.slice(0, 40) + '...';
+          },
+          onError: (e, f) => console.error('Error:', e.message, f),
+        });
+
+        video.srcObject = mediaStream;
+        video.muted = true;
+        isConnected = true;
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Connected';
+        connectBtn.textContent = 'Disconnect';
+        connectBtn.disabled = false;
+
+      } catch (err) {
+        console.error('Connection failed:', err);
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Failed';
+        connectBtn.disabled = false;
+      }
+    };
+
+    // Generate storyboard
+    toStoryboardBtn.onclick = async () => {
+      const prompt = mainPrompt.value.trim();
+      if (!prompt) {
+        alert('Please enter a story prompt');
+        return;
+      }
+
+      toStoryboardBtn.disabled = true;
+      toStoryboardBtn.textContent = 'Generating...';
+
+      try {
+        scenes = await generateScenesWithAI(prompt, null);
+        resetFeedbackUI();
+        renderStoryboard();
+        showScreen(storyboardScreen);
+      } catch (err) {
+        console.error('Scene generation failed:', err);
+        alert('Failed to generate scenes: ' + err.message);
+      } finally {
+        toStoryboardBtn.disabled = false;
+        toStoryboardBtn.textContent = 'Create Storyboard →';
+      }
+    };
+
+    // AI-powered scene generation
+    async function generateScenesWithAI(prompt, style) {
+      const enhancement = style ? styleEnhancements[style] : '';
+      const fullPrompt = enhancement ? `${prompt}. Style: ${enhancement}` : prompt;
+      
+      // Update project title
+      const titleMatch = prompt.match(/^([^,.!?]+)/);
+      const title = titleMatch ? titleMatch[1].slice(0, 30) : 'Untitled';
+      projectTitle.textContent = `Project: ${title}`;
+      projectSubtitle.textContent = `"${prompt.slice(0, 80)}${prompt.length > 80 ? '...' : ''}"`;
+
+      // Try AI generation if API key is available
+      if (ANTHROPIC_API_KEY) {
+        try {
+          const aiScenes = await callClaude(fullPrompt);
+          lastBreakdownSource = 'claude';
+          return formatAIScenes(aiScenes);
+        } catch (err) {
+          console.warn('AI generation failed, using fallback:', err);
+        }
+      }
+
+      // Fallback to local generation
+      lastBreakdownSource = 'fallback';
+      lastClaudeRawResponse = null;
+      lastClaudeParsed = null;
+      return generateScenesFallback(fullPrompt);
+    }
+
+    async function callClaude(userPrompt) {
+      // NOTE: Direct browser calls to Anthropic API require CORS proxy
+      // For production, route through your backend: POST /api/scene-breakdown
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 1500,
+          system: SCENE_BREAKDOWN_SYSTEM_PROMPT,
+          messages: [
+            { role: 'user', content: userPrompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Claude API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const content = data.content[0].text.trim();
+      lastClaudeRawResponse = content;
+      
+      // Parse JSON from response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error('Invalid JSON response from AI');
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+      lastClaudeParsed = parsed;
+      return parsed;
+    }
+
+    function formatAIScenes(aiScenes) {
+      return aiScenes.map((scene, i) => ({
+        label: `Scene ${String(i + 1).padStart(2, '0')}`,
+        prompt: scene.prompt,
+        tags: extractTags(scene.prompt),
+        duration: Math.round((scene.delayAfterMs || 4000) / 1000),
+        isSetup: scene.type === 'start',
+        type: scene.type
+      }));
+    }
+
+    function extractTags(prompt) {
+      const tags = [];
+      const lowerPrompt = prompt.toLowerCase();
+      
+      // Location tags
+      if (lowerPrompt.includes('exterior') || lowerPrompt.includes('outside') || lowerPrompt.includes('outdoor')) {
+        tags.push('EXTERIOR');
+      } else if (lowerPrompt.includes('interior') || lowerPrompt.includes('inside') || lowerPrompt.includes('indoor')) {
+        tags.push('INTERIOR');
+      }
+      
+      // Shot type tags
+      if (lowerPrompt.includes('wide shot') || lowerPrompt.includes('establishing')) {
+        tags.push('WIDE SHOT');
+      } else if (lowerPrompt.includes('close-up') || lowerPrompt.includes('closeup')) {
+        tags.push('CLOSE-UP');
+      } else if (lowerPrompt.includes('medium shot')) {
+        tags.push('MEDIUM SHOT');
+      }
+      
+      // Angle tags
+      if (lowerPrompt.includes('high angle') || lowerPrompt.includes('bird')) {
+        tags.push('HIGH ANGLE');
+      } else if (lowerPrompt.includes('low angle')) {
+        tags.push('LOW ANGLE');
+      }
+      
+      // Time of day
+      if (lowerPrompt.includes('night') || lowerPrompt.includes('dark')) {
+        tags.push('NIGHT');
+      } else if (lowerPrompt.includes('dusk') || lowerPrompt.includes('sunset')) {
+        tags.push('DUSK');
+      } else if (lowerPrompt.includes('dawn') || lowerPrompt.includes('sunrise')) {
+        tags.push('DAWN');
+      }
+      
+      // Default tags if none found
+      if (tags.length === 0) {
+        tags.push('SCENE');
+      }
+      
+      return tags.slice(0, 3);
+    }
+
+    function generateScenesFallback(fullPrompt) {
+      // Fallback: Generate scenes locally without AI
+      return [
+        {
+          label: 'Scene 01',
+          prompt: `Wide establishing shot. ${fullPrompt}. Camera positioned at eye level, capturing the full environment with natural lighting and atmospheric depth.`,
+          tags: ['EXTERIOR', 'WIDE SHOT', 'ESTABLISHING'],
+          duration: 6,
+          isSetup: true,
+          type: 'start'
+        },
+        {
+          label: 'Scene 02',
+          prompt: `The subject is now visible in medium shot, positioned in the center of frame. The environment details are softly blurred in the background.`,
+          tags: ['MEDIUM SHOT', 'CHARACTER'],
+          duration: 4,
+          type: 'interact'
+        },
+        {
+          label: 'Scene 03',
+          prompt: `Close-up detail showing texture and emotion. The lighting emphasizes the key visual elements with shallow depth of field.`,
+          tags: ['CLOSE-UP', 'DETAIL'],
+          duration: 3,
+          type: 'interact'
+        },
+        {
+          label: 'Scene 04',
+          prompt: `The scene is now in a new state - action has progressed. Camera has shifted to capture the changed environment and subject position.`,
+          tags: ['WIDE SHOT', 'ACTION'],
+          duration: 5,
+          type: 'interact'
+        },
+        {
+          label: 'Scene 05',
+          prompt: `Final composition showing resolution. The subject is at rest, environment is calm, lighting suggests conclusion.`,
+          tags: ['ESTABLISHING', 'RESOLUTION'],
+          duration: 4,
+          type: 'interact'
+        }
+      ];
+    }
+
+    function resetFeedbackUI() {
+      lastFeedbackRating = null;
+      thumbsUpBtn.classList.remove('active');
+      thumbsDownBtn.classList.remove('active');
+      feedbackStatus.textContent = '';
+    }
+
+    function buildFeedbackPayload(rating) {
+      return {
+        rating,
+        timestamp: new Date().toISOString(),
+        prompt: mainPrompt.value.trim(),
+        source: lastBreakdownSource,
+        model: 'claude-3-haiku-20240307',
+        systemPrompt: SCENE_BREAKDOWN_SYSTEM_PROMPT,
+        rawResponse: lastClaudeRawResponse,
+        parsedResponse: lastClaudeParsed,
+        scenes,
+      };
+    }
+
+    function saveFeedbackLocal(payload) {
+      const key = 'odyssey_feedback_log';
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      existing.push(payload);
+      localStorage.setItem(key, JSON.stringify(existing));
+    }
+
+    async function submitFeedback(rating) {
+      if (!scenes || scenes.length === 0) {
+        feedbackStatus.textContent = 'No scenes yet.';
+        return;
+      }
+
+      const payload = buildFeedbackPayload(rating);
+      saveFeedbackLocal(payload);
+
+      try {
+        const response = await fetch('http://localhost:8787/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server ${response.status}`);
+        }
+
+        feedbackStatus.textContent = 'Saved';
+      } catch (err) {
+        feedbackStatus.textContent = 'Saved locally';
+      }
+    }
+
+    function renderStoryboard() {
+      const startIdx = currentPage * scenesPerPage;
+      const pageScenes = scenes.slice(startIdx, startIdx + scenesPerPage);
+      
+      scenesGrid.innerHTML = '';
+      pageScenes.forEach((scene, i) => {
+        const globalIdx = startIdx + i;
+        const tagColors = ['yellow', 'blue', 'green'];
+        
+        const card = document.createElement('div');
+        card.className = 'scene-card';
+        card.draggable = true;
+        card.dataset.idx = globalIdx;
+        card.innerHTML = `
+          <div class="scene-label">${scene.label}</div>
+          <div class="scene-drag-handle" title="Drag to reorder">⋮⋮</div>
+          <button class="scene-delete-btn" title="Delete" data-idx="${globalIdx}">✕</button>
+          <textarea class="scene-textarea" data-idx="${globalIdx}">${scene.prompt}</textarea>
+          <div class="scene-footer">
+            ${scene.tags.map((tag, ti) => `<span class="scene-tag ${tagColors[ti % 3]}">${tag}</span>`).join('')}
+            <div class="duration-input">
+              Duration: <input type="number" value="${scene.duration}" min="1" max="60" data-idx="${globalIdx}">s
+            </div>
+          </div>
+        `;
+        scenesGrid.appendChild(card);
+      });
+
+      // Event listeners
+      document.querySelectorAll('.scene-textarea').forEach(el => {
+        el.oninput = (e) => { scenes[e.target.dataset.idx].prompt = e.target.value; };
+      });
+      document.querySelectorAll('.duration-input input').forEach(el => {
+        el.oninput = (e) => { scenes[e.target.dataset.idx].duration = parseInt(e.target.value) || 5; };
+      });
+      document.querySelectorAll('.scene-delete-btn').forEach(el => {
+        el.onclick = (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          if (scenes.length > 1) {
+            scenes.splice(idx, 1);
+            renumberScenes();
+            if (currentPage > 0 && currentPage >= Math.ceil(scenes.length / scenesPerPage)) {
+              currentPage--;
+            }
+            renderStoryboard();
+          }
+        };
+      });
+
+      // Drag and drop
+      document.querySelectorAll('.scene-card').forEach(card => {
+        card.ondragstart = (e) => {
+          e.dataTransfer.setData('text/plain', card.dataset.idx);
+          card.classList.add('dragging');
+        };
+        card.ondragend = () => card.classList.remove('dragging');
+        card.ondragover = (e) => { e.preventDefault(); card.classList.add('drag-over'); };
+        card.ondragleave = () => card.classList.remove('drag-over');
+        card.ondrop = (e) => {
+          e.preventDefault();
+          card.classList.remove('drag-over');
+          const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+          const toIdx = parseInt(card.dataset.idx);
+          if (fromIdx !== toIdx) {
+            const [moved] = scenes.splice(fromIdx, 1);
+            scenes.splice(toIdx, 0, moved);
+            renumberScenes();
+            renderStoryboard();
+          }
+        };
+      });
+
+      renderPagination();
+    }
+
+    function renumberScenes() {
+      scenes.forEach((scene, i) => {
+        scene.label = `Scene ${String(i + 1).padStart(2, '0')}`;
+        if (i === 0) scene.type = 'start';
+        else scene.type = 'interact';
+      });
+    }
+
+    function addNewScene() {
+      const newScene = {
+        label: `Scene ${String(scenes.length + 1).padStart(2, '0')}`,
+        prompt: 'Describe what happens in this scene...',
+        tags: ['SCENE'],
+        duration: 5,
+        type: 'interact'
+      };
+      scenes.push(newScene);
+      currentPage = Math.floor((scenes.length - 1) / scenesPerPage);
+      renderStoryboard();
+    }
+
+    document.getElementById('addSceneBtn').onclick = addNewScene;
+
+    function renderPagination() {
+      const totalPages = Math.ceil(scenes.length / scenesPerPage);
+      const pageNumbers = document.getElementById('pageNumbers');
+      pageNumbers.innerHTML = '';
+      
+      for (let i = 0; i < totalPages; i++) {
+        const num = document.createElement('span');
+        num.className = 'page-num' + (i === currentPage ? ' active' : '');
+        num.textContent = i + 1;
+        num.onclick = () => { currentPage = i; renderStoryboard(); };
+        pageNumbers.appendChild(num);
+      }
+    }
+
+    document.getElementById('prevPage').onclick = () => {
+      if (currentPage > 0) { currentPage--; renderStoryboard(); }
+    };
+    document.getElementById('nextPage').onclick = () => {
+      if (currentPage < Math.ceil(scenes.length / scenesPerPage) - 1) { currentPage++; renderStoryboard(); }
+    };
+
+    regenerateBtn.onclick = async () => {
+      const prompt = mainPrompt.value.trim();
+      regenerateBtn.disabled = true;
+      regenerateBtn.textContent = '🔄 Regenerating...';
+      
+      try {
+        scenes = await generateScenesWithAI(prompt, null);
+        resetFeedbackUI();
+        currentPage = 0;
+        renderStoryboard();
+      } catch (err) {
+        console.error('Regeneration failed:', err);
+        alert('Failed to regenerate: ' + err.message);
+      } finally {
+        regenerateBtn.disabled = false;
+        regenerateBtn.textContent = '🔄 Regenerate';
+      }
+    };
+
+    function handleFeedback(rating) {
+      if (lastFeedbackRating === rating) {
+        lastFeedbackRating = null;
+        thumbsUpBtn.classList.remove('active');
+        thumbsDownBtn.classList.remove('active');
+        feedbackStatus.textContent = '';
+        return;
+      }
+
+      lastFeedbackRating = rating;
+      thumbsUpBtn.classList.toggle('active', rating === 'up');
+      thumbsDownBtn.classList.toggle('active', rating === 'down');
+      feedbackStatus.textContent = 'Saving...';
+      submitFeedback(rating);
+    }
+
+    thumbsUpBtn.onclick = () => handleFeedback('up');
+    thumbsDownBtn.onclick = () => handleFeedback('down');
+
+    backToPromptBtn.onclick = () => showScreen(promptScreen);
+
+    // Film It
+    filmItBtn.onclick = async () => {
+      if (!isConnected) {
+        alert('Please connect first');
+        return;
+      }
+
+      showScreen(generationScreen);
+      renderSceneMarkers();
+      await startGeneration();
+    };
+
+    function renderSceneMarkers() {
+      sceneMarkers.innerHTML = '';
+      scenes.forEach((scene, i) => {
+        const marker = document.createElement('span');
+        marker.className = 'scene-marker';
+        marker.id = `marker-${i}`;
+        marker.textContent = i + 1;
+        sceneMarkers.appendChild(marker);
+      });
+
+      // Render timeline ticks
+      const ticks = document.getElementById('timelineTicks');
+      ticks.innerHTML = '';
+      const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0);
+      totalTimeEl.textContent = formatTime(totalDuration);
+      
+      for (let i = 0; i <= 10; i++) {
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        ticks.appendChild(tick);
+      }
+    }
+
+    async function startGeneration() {
+      isStreaming = true;
+      currentSceneIndex = 0;
+      generationStartTime = Date.now();
+
+      updateSceneDisplay(0);
+
+      // Start first scene
+      try {
+        cameraOverlay.textContent = scenes[0].prompt.slice(0, 50) + '...';
+        cameraOverlay.classList.remove('hidden');
+        
+        const startOptions = { prompt: scenes[0].prompt, portrait };
+        
+        // Add reference image if provided
+        if (referenceImage) {
+          console.log('Using reference image:', referenceImage.name);
+          startOptions.image = referenceImage;
+        }
+        
+        await client.startStream(startOptions);
+      } catch (err) {
+        console.error('Start failed:', err);
+        alert('Failed to start: ' + err.message);
+        return;
+      }
+
+      // Schedule follow-ups
+      scheduleNextScene(1);
+      updateProgress();
+    }
+
+    function scheduleNextScene(index) {
+      if (index >= scenes.length || !isStreaming) return;
+
+      const delay = scenes[index - 1].duration * 1000;
+
+      setTimeout(async () => {
+        if (!isStreaming) return;
+
+        currentSceneIndex = index;
+        updateSceneDisplay(index);
+
+        try {
+          cameraOverlay.textContent = scenes[index].prompt.slice(0, 50) + '...';
+          await client.interact({ prompt: scenes[index].prompt });
+        } catch (err) {
+          console.error('Interact failed:', err);
+        }
+
+        scheduleNextScene(index + 1);
+      }, delay);
+    }
+
+    function updateSceneDisplay(index) {
+      // Update title
+      const scene = scenes[index];
+      sceneCounterTitle.textContent = `Scene ${String(index + 1).padStart(2, '0')}: ${scene.isSetup ? 'Setup' : 'Follow-up'}`;
+
+      // Update markers
+      scenes.forEach((_, i) => {
+        const marker = document.getElementById(`marker-${i}`);
+        if (i < index) marker.className = 'scene-marker completed';
+        else if (i === index) marker.className = 'scene-marker active';
+        else marker.className = 'scene-marker';
+      });
+    }
+
+    function updateProgress() {
+      if (!generationStartTime) return;
+
+      const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0) * 1000;
+      const elapsed = Date.now() - generationStartTime;
+      const progress = Math.min((elapsed / totalDuration) * 100, 100);
+
+      timelineProgress.style.width = `${progress}%`;
+      timelineMarker.style.left = `${progress}%`;
+      currentTimeEl.textContent = formatTime(elapsed / 1000);
+
+      if (elapsed < totalDuration) {
+        requestAnimationFrame(updateProgress);
+      } else {
+        // All scenes complete - video keeps running
+        scenes.forEach((_, i) => {
+          document.getElementById(`marker-${i}`).className = 'scene-marker completed';
+        });
+        sceneCounterTitle.textContent = 'Complete - Stream continues...';
+        cameraOverlay.classList.add('hidden');
+      }
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Back to storyboard
+    backToStoryboard.onclick = async () => {
+      isStreaming = false;
+      try { await client.endStream(); } catch {}
+      showScreen(storyboardScreen);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Odyssey Debug Console</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 300px;
+      background: #161b22;
+      border-right: 1px solid #30363d;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    h1 {
+      font-size: 16px;
+      color: #58a6ff;
+      margin-bottom: 8px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #c9d1d9;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #30363d; border-color: #8b949e; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.primary { background: #238636; border-color: #238636; }
+    .btn.primary:hover { background: #2ea043; }
+    .btn.danger { background: #da3633; border-color: #da3633; }
+    .btn.danger:hover { background: #f85149; }
+    
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .input-group label {
+      font-size: 12px;
+      color: #8b949e;
+    }
+    input[type="text"], input[type="file"] {
+      padding: 8px 12px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 13px;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #0d1117;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #8b949e;
+    }
+    .status-dot.connected { background: #3fb950; }
+    .status-dot.connecting { background: #d29922; }
+    .status-dot.error { background: #f85149; }
+    
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .video-section {
+      height: 300px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid #30363d;
+    }
+    video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .log-section {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+    .log-header h2 {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .clear-btn {
+      padding: 4px 12px;
+      font-size: 12px;
+    }
+    #logContainer {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-entry {
+      display: flex;
+      gap: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid #21262d;
+    }
+    .log-time {
+      color: #8b949e;
+      flex-shrink: 0;
+    }
+    .log-type {
+      flex-shrink: 0;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .log-type.info { background: #388bfd33; color: #58a6ff; }
+    .log-type.event { background: #3fb95033; color: #3fb950; }
+    .log-type.error { background: #f8514933; color: #f85149; }
+    .log-type.warn { background: #d2992233; color: #d29922; }
+    .log-type.data { background: #a371f733; color: #a371f7; }
+    .log-msg {
+      flex: 1;
+      word-break: break-all;
+    }
+    .image-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: #0d1117;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .image-preview img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .image-preview .remove {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #f85149;
+      cursor: pointer;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h1>🔧 Odyssey Debug</h1>
+    
+    <div class="status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Disconnected</span>
+    </div>
+
+    <button class="btn primary" id="connectBtn">1. Connect</button>
+    <button class="btn" id="disconnectBtn" disabled>Disconnect</button>
+    
+    <hr style="border-color: #30363d;">
+
+    <div class="input-group">
+      <label>Prompt</label>
+      <input type="text" id="promptInput" placeholder="A cat sitting..." value="A cat sitting on a windowsill">
+    </div>
+
+    <div class="input-group">
+      <label>Image (optional)</label>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div id="imagePreview" class="image-preview hidden">
+      <img id="previewImg" src="">
+      <span id="imageName">image.jpg</span>
+      <button class="remove" id="removeImage">✕</button>
+    </div>
+
+    <button class="btn" id="startStreamBtn" disabled>2. Start Stream</button>
+    <button class="btn" id="interactBtn" disabled>3. Interact</button>
+    <button class="btn" id="endStreamBtn" disabled>4. End Stream</button>
+
+    <hr style="border-color: #30363d;">
+
+    <div class="input-group">
+      <label>Orientation</label>
+      <select id="orientationSelect" style="padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;">
+        <option value="true">Portrait (704×1280)</option>
+        <option value="false">Landscape (1280×704)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="video-section">
+      <video id="video" autoplay playsinline muted></video>
+    </div>
+    
+    <div class="log-section">
+      <div class="log-header">
+        <h2>Console Log</h2>
+        <button class="btn clear-btn" id="clearLog">Clear</button>
+      </div>
+      <div id="logContainer"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Odyssey } from '@odysseyml/odyssey';
+
+    const API_KEY = 'ody_yZhHcqe4Sj8vLNbBTbQIdIQLBaPWHeJ4';
+
+    // Elements
+    const video = document.getElementById('video');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const logContainer = document.getElementById('logContainer');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const startStreamBtn = document.getElementById('startStreamBtn');
+    const interactBtn = document.getElementById('interactBtn');
+    const endStreamBtn = document.getElementById('endStreamBtn');
+    const promptInput = document.getElementById('promptInput');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const imageName = document.getElementById('imageName');
+    const removeImage = document.getElementById('removeImage');
+    const orientationSelect = document.getElementById('orientationSelect');
+    const clearLog = document.getElementById('clearLog');
+
+    let selectedFile = null;
+
+    // Logging
+    function log(type, msg, data = null) {
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+      
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="log-type ${type}">${type}</span>
+        <span class="log-msg">${msg}${data ? ` <code>${JSON.stringify(data)}</code>` : ''}</span>
+      `;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+      
+      console.log(`[${type.toUpperCase()}]`, msg, data || '');
+    }
+
+    clearLog.onclick = () => { logContainer.innerHTML = ''; };
+
+    // Client
+    log('info', 'Creating Odyssey client...');
+    const client = new Odyssey({ apiKey: API_KEY });
+    log('info', 'Client created');
+
+    function setStatus(text, state = '') {
+      statusText.textContent = text;
+      statusDot.className = 'status-dot ' + state;
+    }
+
+    // Connect
+    connectBtn.onclick = async () => {
+      log('info', 'Connecting...');
+      setStatus('Connecting...', 'connecting');
+      connectBtn.disabled = true;
+
+      const startTime = performance.now();
+
+      try {
+        const mediaStream = await client.connect({
+          onConnected: (stream) => {
+            log('event', 'onConnected', { tracks: stream.getTracks().map(t => t.kind) });
+          },
+          onDisconnected: () => {
+            log('event', 'onDisconnected');
+            setStatus('Disconnected', '');
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            startStreamBtn.disabled = true;
+            interactBtn.disabled = true;
+            endStreamBtn.disabled = true;
+          },
+          onStreamStarted: (streamId) => {
+            log('event', 'onStreamStarted', { streamId });
+            interactBtn.disabled = false;
+            endStreamBtn.disabled = true;
+          },
+          onStreamEnded: () => {
+            log('event', 'onStreamEnded');
+            startStreamBtn.disabled = false;
+            interactBtn.disabled = true;
+            endStreamBtn.disabled = true;
+          },
+          onInteractAcknowledged: (prompt) => {
+            log('event', 'onInteractAcknowledged', { prompt });
+          },
+          onStreamError: (reason, message) => {
+            log('error', `onStreamError: ${reason}`, { message });
+          },
+          onStatusChange: (status, message) => {
+            log('event', `onStatusChange: ${status}`, { message });
+          },
+          onError: (error, fatal) => {
+            log('error', `onError: ${error.message}`, { fatal });
+            if (fatal) setStatus('Error', 'error');
+          },
+        });
+
+        const elapsed = (performance.now() - startTime).toFixed(0);
+        log('info', `Connected in ${elapsed}ms`);
+        log('data', 'MediaStream', { 
+          id: mediaStream.id, 
+          videoTracks: mediaStream.getVideoTracks().length,
+          audioTracks: mediaStream.getAudioTracks().length 
+        });
+
+        video.srcObject = mediaStream;
+        setStatus('Connected', 'connected');
+        disconnectBtn.disabled = false;
+        startStreamBtn.disabled = false;
+
+      } catch (err) {
+        log('error', `Connect failed: ${err.message}`);
+        setStatus('Failed', 'error');
+        connectBtn.disabled = false;
+      }
+    };
+
+    // Disconnect
+    disconnectBtn.onclick = () => {
+      log('info', 'Disconnecting...');
+      client.disconnect();
+      video.srcObject = null;
+      setStatus('Disconnected', '');
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+      startStreamBtn.disabled = true;
+    };
+
+    // Start Stream
+    startStreamBtn.onclick = async () => {
+      const prompt = promptInput.value.trim();
+      const portrait = orientationSelect.value === 'true';
+      
+      log('info', 'Starting stream...', { prompt, portrait, hasImage: !!selectedFile });
+      startStreamBtn.disabled = true;
+
+      const startTime = performance.now();
+
+      try {
+        const options = { prompt, portrait };
+        
+        if (selectedFile) {
+          log('data', 'Original file', { 
+            name: selectedFile.name, 
+            size: selectedFile.size, 
+            type: selectedFile.type 
+          });
+          
+          // Fix MIME type based on actual file content
+          const fixedFile = await fixImageMimeType(selectedFile);
+          log('data', 'Fixed file', { 
+            name: fixedFile.name, 
+            size: fixedFile.size, 
+            type: fixedFile.type 
+          });
+          options.image = fixedFile;
+        }
+
+        const streamId = await client.startStream(options);
+        const elapsed = (performance.now() - startTime).toFixed(0);
+        
+        log('info', `Stream started in ${elapsed}ms`, { streamId });
+        endStreamBtn.disabled = false;
+        
+        // Clear image after use
+        selectedFile = null;
+        imagePreview.classList.add('hidden');
+        fileInput.value = '';
+
+      } catch (err) {
+        log('error', `Start stream failed: ${err.message}`);
+        startStreamBtn.disabled = false;
+      }
+    };
+
+    // Interact
+    interactBtn.onclick = async () => {
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      log('info', 'Sending interaction...', { prompt });
+      const startTime = performance.now();
+
+      try {
+        const ack = await client.interact({ prompt });
+        const elapsed = (performance.now() - startTime).toFixed(0);
+        log('info', `Interaction sent in ${elapsed}ms`, { ack });
+      } catch (err) {
+        log('error', `Interact failed: ${err.message}`);
+      }
+    };
+
+    // End Stream
+    endStreamBtn.onclick = async () => {
+      log('info', 'Ending stream...');
+      try {
+        await client.endStream();
+        log('info', 'Stream ended');
+        startStreamBtn.disabled = false;
+        endStreamBtn.disabled = true;
+        interactBtn.disabled = true;
+      } catch (err) {
+        log('error', `End stream failed: ${err.message}`);
+      }
+    };
+
+    // File handling
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFile = file;
+        previewImg.src = URL.createObjectURL(file);
+        imageName.textContent = `${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
+        imagePreview.classList.remove('hidden');
+        log('info', 'Image selected', { name: file.name, size: file.size, type: file.type });
+      }
+    };
+
+    removeImage.onclick = () => {
+      selectedFile = null;
+      imagePreview.classList.add('hidden');
+      fileInput.value = '';
+      log('info', 'Image removed');
+    };
+
+    // Fix image MIME type by reading actual file bytes
+    async function fixImageMimeType(file) {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      
+      // Detect actual MIME type from magic bytes
+      let detectedType = null;
+      let formatName = 'unknown';
+      
+      if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+        detectedType = 'image/jpeg';
+        formatName = 'JPEG';
+      } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+        detectedType = 'image/png';
+        formatName = 'PNG';
+      } else if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+        detectedType = 'image/gif';
+        formatName = 'GIF';
+      } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+                 bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+        detectedType = 'image/webp';
+        formatName = 'WebP';
+      } else if (bytes[0] === 0x42 && bytes[1] === 0x4D) {
+        detectedType = 'image/bmp';
+        formatName = 'BMP';
+      } else if (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x00) {
+        // Check for HEIC/HEIF (ftyp box)
+        const str = String.fromCharCode(...bytes.slice(4, 12));
+        if (str.includes('ftyp')) {
+          if (str.includes('heic') || str.includes('heix') || str.includes('mif1')) {
+            detectedType = 'image/heic';
+            formatName = 'HEIC';
+          } else if (str.includes('avif')) {
+            detectedType = 'image/avif';
+            formatName = 'AVIF';
+          }
+        }
+      }
+      
+      log('data', 'Magic bytes', { 
+        first8: Array.from(bytes.slice(0, 8)).map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' '),
+        bytes4to12: String.fromCharCode(...bytes.slice(4, 12)),
+        detectedType,
+        formatName
+      });
+      
+      if (!detectedType) {
+        log('error', `Unknown image format! File claims to be ${file.type} but magic bytes don't match any known format.`);
+        log('warn', 'Try converting the image to actual JPEG or PNG format');
+        throw new Error(`Unknown image format. Please convert to JPEG or PNG.`);
+      }
+      
+      if (detectedType !== file.type) {
+        log('warn', `File extension mismatch! File is actually ${formatName} but named as ${file.type}`);
+      }
+      
+      // Create new File with correct type
+      return new File([buffer], file.name, { type: detectedType });
+    }
+
+    log('info', 'Debug page ready');
+  </script>
+</body>
+</html>

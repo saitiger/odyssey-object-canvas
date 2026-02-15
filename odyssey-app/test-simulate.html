@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Odyssey Simulate Test</title>
+  <style>
+    body { font-family: monospace; background: #1a1a1a; color: #0f0; padding: 20px; }
+    #log { white-space: pre-wrap; margin-top: 20px; }
+    button { margin: 5px; padding: 10px 20px; cursor: pointer; }
+    video { width: 600px; background: #000; display: block; margin: 20px 0; }
+    .scene-builder { margin: 20px 0; padding: 15px; border: 1px solid #0f0; }
+    .scene-item { display: flex; gap: 10px; margin: 10px 0; align-items: center; }
+    .scene-item input { padding: 8px; background: #333; color: #0f0; border: 1px solid #0f0; }
+    .scene-item input[type="number"] { width: 80px; }
+    .scene-item input[type="text"] { flex: 1; }
+    .scene-item select { padding: 8px; background: #333; color: #0f0; border: 1px solid #0f0; }
+    .remove-btn { background: #f00; color: #fff; border: none; padding: 5px 10px; cursor: pointer; }
+    #scenes-list { max-height: 300px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <h2>Odyssey Simulate API Test</h2>
+  <p>This uses batch processing instead of real-time streaming</p>
+  
+  <div class="scene-builder">
+    <h3>Scene Builder</h3>
+    <div id="scenes-list"></div>
+    <button id="addSceneBtn">+ Add Scene</button>
+    <button id="addEndBtn">+ Add End Scene</button>
+  </div>
+
+  <button id="runBtn">Run Simulation</button>
+  <button id="checkBtn" disabled>Check Status</button>
+  
+  <video id="video" controls></video>
+  <div id="log"></div>
+
+  <script type="module">
+    import { Odyssey } from '@odysseyml/odyssey';
+
+    const API_KEY = 'ody_yZhHcqe4Sj8vLNbBTbQIdIQLBaPWHeJ4';
+    const client = new Odyssey({ apiKey: API_KEY });
+    
+    const logEl = document.getElementById('log');
+    const video = document.getElementById('video');
+    const checkBtn = document.getElementById('checkBtn');
+    const scenesList = document.getElementById('scenes-list');
+    
+    let currentJobId = null;
+    let scenes = [];
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `[${time}] ${msg}\n`;
+      console.log(msg);
+    }
+
+    function renderScenes() {
+      scenesList.innerHTML = '';
+      scenes.forEach((scene, index) => {
+        const div = document.createElement('div');
+        div.className = 'scene-item';
+        
+        const isEnd = scene.type === 'end';
+        div.innerHTML = `
+          <input type="number" value="${scene.timestamp_ms}" min="0" step="1000" placeholder="ms" 
+                 onchange="updateScene(${index}, 'timestamp_ms', this.value)">
+          <select onchange="updateScene(${index}, 'type', this.value)">
+            <option value="start" ${scene.type === 'start' ? 'selected' : ''}>Start</option>
+            <option value="interact" ${scene.type === 'interact' ? 'selected' : ''}>Interact</option>
+            <option value="end" ${scene.type === 'end' ? 'selected' : ''}>End</option>
+          </select>
+          <input type="text" value="${scene.prompt || ''}" placeholder="Prompt (not needed for End)" 
+                 ${isEnd ? 'disabled' : ''} onchange="updateScene(${index}, 'prompt', this.value)">
+          <button class="remove-btn" onclick="removeScene(${index})">X</button>
+        `;
+        scenesList.appendChild(div);
+      });
+    }
+
+    window.updateScene = (index, field, value) => {
+      if (field === 'timestamp_ms') {
+        scenes[index].timestamp_ms = parseInt(value) || 0;
+      } else {
+        scenes[index][field] = value;
+      }
+    };
+
+    window.removeScene = (index) => {
+      scenes.splice(index, 1);
+      renderScenes();
+    };
+
+    document.getElementById('addSceneBtn').onclick = () => {
+      const lastTs = scenes.length > 0 ? scenes[scenes.length - 1].timestamp_ms : 0;
+      scenes.push({ timestamp_ms: lastTs + 3000, type: scenes.length === 0 ? 'start' : 'interact', prompt: '' });
+      renderScenes();
+    };
+
+    document.getElementById('addEndBtn').onclick = () => {
+      const lastTs = scenes.length > 0 ? scenes[scenes.length - 1].timestamp_ms : 0;
+      scenes.push({ timestamp_ms: lastTs + 3000, type: 'end', prompt: '' });
+      renderScenes();
+    };
+
+    function buildScript() {
+      return scenes.map(s => {
+        const entry = { timestamp_ms: s.timestamp_ms };
+        if (s.type === 'start') entry.start = { prompt: s.prompt };
+        else if (s.type === 'interact') entry.interact = { prompt: s.prompt };
+        else if (s.type === 'end') entry.end = {};
+        return entry;
+      });
+    }
+
+    // Run simulation
+    document.getElementById('runBtn').onclick = async () => {
+      const script = buildScript();
+      if (script.length === 0) {
+        log('Please add at least one scene!');
+        return;
+      }
+      log('Creating simulation job...');
+      log(`Script: ${JSON.stringify(script, null, 2)}`);
+      
+      try {
+        const job = await client.simulate({
+          script,
+          portrait: true
+        });
+        
+        currentJobId = job.job_id;
+        log(`Simulation created! Job ID: ${job.job_id}`);
+        log('Click "Check Status" to poll for completion...');
+        checkBtn.disabled = false;
+        
+      } catch (err) {
+        log(`ERROR: ${err.message}`);
+        console.error(err);
+      }
+    };
+
+    // Check status
+    checkBtn.onclick = async () => {
+      if (!currentJobId) return;
+      
+      log(`Checking status of job ${currentJobId}...`);
+      
+      try {
+        const status = await client.getSimulateStatus(currentJobId);
+        log(`Status: ${status.status}`);
+        
+        if (status.status === 'completed') {
+          log('Simulation completed! Getting recording...');
+          
+          for (const stream of status.streams) {
+            const recording = await client.getRecording(stream.stream_id);
+            log(`Video URL: ${recording.video_url}`);
+            log(`Duration: ${recording.duration_seconds}s`);
+            
+            if (recording.video_url) {
+              video.src = recording.video_url;
+              video.play();
+            }
+          }
+        } else if (status.status === 'failed') {
+          log(`Failed: ${status.error_message}`);
+        } else {
+          log('Still processing... click again in a few seconds');
+        }
+        
+      } catch (err) {
+        log(`ERROR: ${err.message}`);
+        console.error(err);
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Odyssey Storyboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .logo { font-size: 20px; font-weight: 600; }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #666;
+    }
+    .status-dot.connected { background: #10b981; }
+    .status-dot.generating { background: #f59e0b; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* Step 1: Idea Input */
+    .idea-section {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .idea-section h1 {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+    .idea-section p {
+      color: #888;
+      margin-bottom: 32px;
+    }
+    .idea-input-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .idea-input {
+      width: 100%;
+      padding: 18px 24px;
+      font-size: 18px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .idea-input:focus { border-color: #6366f1; }
+    .idea-input::placeholder { color: #666; }
+
+    .expand-btn {
+      margin-top: 20px;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .expand-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.3); }
+    .expand-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Step 2: Storyboard */
+    .storyboard-section { display: none; }
+    .storyboard-section.active { display: block; }
+
+    .storyboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .storyboard-header h2 { font-size: 24px; }
+    .total-duration {
+      background: rgba(255,255,255,0.1);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+
+    .scenes-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .scene-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .scene-card.active {
+      border-color: #6366f1;
+      background: rgba(99,102,241,0.1);
+    }
+    .scene-card.completed {
+      opacity: 0.6;
+    }
+
+    .scene-number {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .scene-number.start { background: linear-gradient(135deg, #10b981, #059669); }
+
+    .scene-content { flex: 1; }
+    .scene-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .scene-prompt {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+      color: #fff;
+      resize: none;
+      outline: none;
+      min-height: 60px;
+    }
+    .scene-prompt:focus { border-color: #6366f1; }
+
+    .scene-timing {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .duration-input {
+      width: 70px;
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: rgba(0,0,0,0.2);
+      color: #fff;
+      text-align: center;
+    }
+    .duration-label { color: #888; font-size: 14px; }
+
+    .scene-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .scene-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+    }
+    .scene-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .scene-btn.delete:hover { background: rgba(239,68,68,0.2); color: #ef4444; border-color: #ef4444; }
+
+    .add-scene-btn {
+      width: 100%;
+      padding: 16px;
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 12px;
+      background: transparent;
+      color: #888;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .add-scene-btn:hover { border-color: #6366f1; color: #6366f1; }
+
+    .storyboard-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 32px;
+    }
+    .back-btn {
+      padding: 14px 32px;
+      font-size: 16px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .generate-btn {
+      padding: 14px 48px;
+      font-size: 16px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Step 3: Generation View */
+    .generation-section { display: none; }
+    .generation-section.active { display: block; }
+
+    .generation-layout {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 24px;
+    }
+
+    .video-container {
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+    }
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .generation-sidebar {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: rgba(0,0,0,0.2);
+    }
+    .timeline-item.active {
+      background: rgba(99,102,241,0.2);
+      border: 1px solid #6366f1;
+    }
+    .timeline-item.completed {
+      opacity: 0.5;
+    }
+    .timeline-item.pending {
+      opacity: 0.7;
+    }
+
+    .timeline-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .timeline-indicator.active { background: #6366f1; }
+    .timeline-indicator.completed { background: #10b981; }
+
+    .timeline-content { flex: 1; }
+    .timeline-prompt {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .timeline-time {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .generation-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .control-btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+    }
+    .control-btn:hover { background: rgba(255,255,255,0.1); }
+    .control-btn.stop { border-color: #ef4444; color: #ef4444; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🎬 Odyssey Storyboard</div>
+    <div class="status-bar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Disconnected</span>
+      <button class="control-btn" id="connectBtn" style="padding: 8px 16px;">Connect</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Step 1: Idea Input -->
+    <div class="idea-section" id="ideaSection">
+      <h1>What's your story?</h1>
+      <p>Enter a high-level idea and we'll break it into a storyboard</p>
+      <div class="idea-input-container">
+        <input type="text" class="idea-input" id="ideaInput" 
+          placeholder="e.g., A dog playing in the park, chasing butterflies, then resting under a tree">
+        <button class="expand-btn" id="expandBtn">Expand to Storyboard →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Storyboard Editor -->
+    <div class="storyboard-section" id="storyboardSection">
+      <div class="storyboard-header">
+        <h2>📋 Storyboard</h2>
+        <div class="total-duration">Total: <span id="totalDuration">0</span>s</div>
+      </div>
+
+      <div class="scenes-container" id="scenesContainer"></div>
+      
+      <button class="add-scene-btn" id="addSceneBtn">+ Add Scene</button>
+
+      <div class="storyboard-actions">
+        <button class="back-btn" id="backBtn">← Back to Idea</button>
+        <button class="generate-btn" id="generateBtn">🎬 Generate Video</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Generation View -->
+    <div class="generation-section" id="generationSection">
+      <div class="generation-layout">
+        <div>
+          <div class="video-container">
+            <video id="video" autoplay playsinline muted></video>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <div class="generation-sidebar">
+          <div class="sidebar-title">Timeline</div>
+          <div id="timelineContainer"></div>
+          <div class="generation-controls">
+            <button class="control-btn stop" id="stopBtn">⏹ Stop</button>
+            <button class="control-btn" id="newStoryBtn">New Story</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Odyssey } from '@odysseyml/odyssey';
+
+    const API_KEY = 'ody_yZhHcqe4Sj8vLNbBTbQIdIQLBaPWHeJ4';
+    const client = new Odyssey({ apiKey: API_KEY });
+
+    // Elements
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const connectBtn = document.getElementById('connectBtn');
+    const ideaSection = document.getElementById('ideaSection');
+    const storyboardSection = document.getElementById('storyboardSection');
+    const generationSection = document.getElementById('generationSection');
+    const ideaInput = document.getElementById('ideaInput');
+    const expandBtn = document.getElementById('expandBtn');
+    const scenesContainer = document.getElementById('scenesContainer');
+    const addSceneBtn = document.getElementById('addSceneBtn');
+    const backBtn = document.getElementById('backBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const totalDurationEl = document.getElementById('totalDuration');
+    const video = document.getElementById('video');
+    const timelineContainer = document.getElementById('timelineContainer');
+    const progressFill = document.getElementById('progressFill');
+    const stopBtn = document.getElementById('stopBtn');
+    const newStoryBtn = document.getElementById('newStoryBtn');
+
+    // State
+    let isConnected = false;
+    let scenes = [];
+    let currentSceneIndex = 0;
+    let generationStartTime = null;
+    let generationTimer = null;
+    let isGenerating = false;
+
+    // Connection
+    connectBtn.onclick = async () => {
+      if (isConnected) {
+        client.disconnect();
+        return;
+      }
+
+      statusDot.classList.add('generating');
+      statusText.textContent = 'Connecting...';
+      connectBtn.disabled = true;
+
+      try {
+        const mediaStream = await client.connect({
+          onDisconnected: () => {
+            isConnected = false;
+            statusDot.className = 'status-dot';
+            statusText.textContent = 'Disconnected';
+            connectBtn.textContent = 'Connect';
+            connectBtn.disabled = false;
+          },
+          onStreamStarted: (id) => console.log('Stream started:', id),
+          onStreamEnded: () => console.log('Stream ended'),
+          onInteractAcknowledged: (p) => console.log('Ack:', p),
+          onError: (e, f) => console.error('Error:', e.message, f),
+        });
+
+        video.srcObject = mediaStream;
+        isConnected = true;
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Connected';
+        connectBtn.textContent = 'Disconnect';
+        connectBtn.disabled = false;
+
+      } catch (err) {
+        console.error('Connection failed:', err);
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Failed';
+        connectBtn.disabled = false;
+      }
+    };
+
+    // Expand idea to storyboard
+    expandBtn.onclick = () => {
+      const idea = ideaInput.value.trim();
+      if (!idea) return;
+
+      // Parse idea into scenes (simple split by comma/period or generate multiple)
+      scenes = expandIdeaToScenes(idea);
+      renderScenes();
+      
+      ideaSection.classList.add('hidden');
+      storyboardSection.classList.add('active');
+    };
+
+    function expandIdeaToScenes(idea) {
+      // Split by commas, "then", "and then", periods
+      const parts = idea.split(/[,.]|\bthen\b|\band then\b/i)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      if (parts.length < 2) {
+        // If single idea, create a start + 2 follow-ups
+        return [
+          { prompt: idea, duration: 5, isStart: true },
+          { prompt: `Continue the scene smoothly`, duration: 5, isStart: false },
+          { prompt: `Bring the scene to a natural conclusion`, duration: 5, isStart: false },
+        ];
+      }
+
+      return parts.map((prompt, i) => ({
+        prompt: prompt.charAt(0).toUpperCase() + prompt.slice(1),
+        duration: 5,
+        isStart: i === 0
+      }));
+    }
+
+    function renderScenes() {
+      scenesContainer.innerHTML = '';
+      let totalDuration = 0;
+
+      scenes.forEach((scene, index) => {
+        totalDuration += scene.duration;
+        
+        const card = document.createElement('div');
+        card.className = 'scene-card';
+        card.innerHTML = `
+          <div class="scene-number ${scene.isStart ? 'start' : ''}">${index + 1}</div>
+          <div class="scene-content">
+            <div class="scene-label">${scene.isStart ? 'Starting Prompt' : 'Follow-up ' + index}</div>
+            <textarea class="scene-prompt" data-index="${index}">${scene.prompt}</textarea>
+          </div>
+          <div class="scene-timing">
+            <input type="number" class="duration-input" value="${scene.duration}" min="1" max="60" data-index="${index}">
+            <span class="duration-label">sec</span>
+          </div>
+          <div class="scene-actions">
+            ${!scene.isStart ? `<button class="scene-btn delete" data-index="${index}">Delete</button>` : ''}
+          </div>
+        `;
+        scenesContainer.appendChild(card);
+      });
+
+      totalDurationEl.textContent = totalDuration;
+
+      // Add event listeners
+      document.querySelectorAll('.scene-prompt').forEach(el => {
+        el.oninput = (e) => {
+          scenes[e.target.dataset.index].prompt = e.target.value;
+        };
+      });
+
+      document.querySelectorAll('.duration-input').forEach(el => {
+        el.oninput = (e) => {
+          scenes[e.target.dataset.index].duration = parseInt(e.target.value) || 5;
+          updateTotalDuration();
+        };
+      });
+
+      document.querySelectorAll('.scene-btn.delete').forEach(el => {
+        el.onclick = (e) => {
+          scenes.splice(e.target.dataset.index, 1);
+          renderScenes();
+        };
+      });
+    }
+
+    function updateTotalDuration() {
+      const total = scenes.reduce((sum, s) => sum + s.duration, 0);
+      totalDurationEl.textContent = total;
+    }
+
+    addSceneBtn.onclick = () => {
+      scenes.push({ prompt: '', duration: 5, isStart: false });
+      renderScenes();
+      // Focus the new scene
+      const textareas = document.querySelectorAll('.scene-prompt');
+      textareas[textareas.length - 1].focus();
+    };
+
+    backBtn.onclick = () => {
+      storyboardSection.classList.remove('active');
+      ideaSection.classList.remove('hidden');
+    };
+
+    // Generate
+    generateBtn.onclick = async () => {
+      if (!isConnected) {
+        alert('Please connect first');
+        return;
+      }
+
+      if (scenes.length === 0 || !scenes[0].prompt.trim()) {
+        alert('Please add at least one scene');
+        return;
+      }
+
+      storyboardSection.classList.remove('active');
+      generationSection.classList.add('active');
+      
+      renderTimeline();
+      await startGeneration();
+    };
+
+    function renderTimeline() {
+      timelineContainer.innerHTML = '';
+      let cumTime = 0;
+
+      scenes.forEach((scene, index) => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item pending';
+        item.id = `timeline-${index}`;
+        item.innerHTML = `
+          <div class="timeline-indicator">${index + 1}</div>
+          <div class="timeline-content">
+            <div class="timeline-prompt">${scene.prompt.slice(0, 50)}${scene.prompt.length > 50 ? '...' : ''}</div>
+            <div class="timeline-time">${cumTime}s - ${cumTime + scene.duration}s</div>
+          </div>
+        `;
+        timelineContainer.appendChild(item);
+        cumTime += scene.duration;
+      });
+    }
+
+    async function startGeneration() {
+      isGenerating = true;
+      currentSceneIndex = 0;
+      generationStartTime = Date.now();
+
+      // Start first scene
+      const startScene = scenes[0];
+      updateTimelineItem(0, 'active');
+      
+      try {
+        await client.startStream({ prompt: startScene.prompt, portrait: true });
+      } catch (err) {
+        console.error('Failed to start stream:', err);
+        alert('Failed to start: ' + err.message);
+        return;
+      }
+
+      // Schedule follow-up prompts
+      scheduleNextScene(1);
+      
+      // Update progress
+      updateProgress();
+    }
+
+    function scheduleNextScene(index) {
+      if (index >= scenes.length || !isGenerating) return;
+
+      // Calculate delay based on previous scene duration
+      const prevScene = scenes[index - 1];
+      const delayMs = prevScene.duration * 1000;
+
+      setTimeout(async () => {
+        if (!isGenerating) return;
+
+        updateTimelineItem(index - 1, 'completed');
+        updateTimelineItem(index, 'active');
+        currentSceneIndex = index;
+
+        try {
+          await client.interact({ prompt: scenes[index].prompt });
+        } catch (err) {
+          console.error('Interact failed:', err);
+        }
+
+        // Schedule next
+        scheduleNextScene(index + 1);
+      }, delayMs);
+    }
+
+    function updateTimelineItem(index, state) {
+      const item = document.getElementById(`timeline-${index}`);
+      if (!item) return;
+      
+      item.className = `timeline-item ${state}`;
+      const indicator = item.querySelector('.timeline-indicator');
+      indicator.className = `timeline-indicator ${state}`;
+      
+      if (state === 'completed') {
+        indicator.textContent = '✓';
+      }
+    }
+
+    function updateProgress() {
+      if (!isGenerating) return;
+
+      const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0) * 1000;
+      const elapsed = Date.now() - generationStartTime;
+      const progress = Math.min((elapsed / totalDuration) * 100, 100);
+      
+      progressFill.style.width = `${progress}%`;
+
+      if (progress < 100) {
+        requestAnimationFrame(updateProgress);
+      } else {
+        // Generation complete
+        setTimeout(() => {
+          updateTimelineItem(scenes.length - 1, 'completed');
+          isGenerating = false;
+        }, 500);
+      }
+    }
+
+    stopBtn.onclick = async () => {
+      isGenerating = false;
+      try {
+        await client.endStream();
+      } catch (err) {
+        console.error('End stream error:', err);
+      }
+      generationSection.classList.remove('active');
+      storyboardSection.classList.add('active');
+    };
+
+    newStoryBtn.onclick = async () => {
+      isGenerating = false;
+      try {
+        await client.endStream();
+      } catch (err) {}
+      
+      scenes = [];
+      ideaInput.value = '';
+      generationSection.classList.remove('active');
+      storyboardSection.classList.remove('active');
+      ideaSection.classList.remove('hidden');
+    };
+  </script>
+</body>
+</html>
